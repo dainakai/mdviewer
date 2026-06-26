@@ -15,6 +15,13 @@ Markdown Viewer is a desktop Markdown viewer for Linux and macOS. It focuses on 
 - Outline, recent files, search, print, and PDF export
 - CSS overrides from `~/.config/mdviewer/user.css`
 
+## Install
+
+Download the latest installer from [GitHub Releases](https://github.com/dainakai/mdviewer/releases).
+
+- Linux: use the `.deb` package or the `.AppImage`
+- macOS: use the `.dmg` package
+
 ## 開発起動
 
 ```bash
@@ -40,24 +47,6 @@ npm run register
 ```bash
 npm run unregister
 ```
-
-## 配布パッケージ作成
-
-Linux:
-
-```bash
-npm run dist:linux
-```
-
-macOS:
-
-```bash
-npm run dist:mac
-```
-
-macOS用の署名済みdmgを安定して作るにはmacOS上、またはGitHub ActionsのmacOS runnerでビルドしてください。Linux上からはLinux用パッケージの作成が主対象です。
-
-GitHub Releasesで配布する場合は、`vX.Y.Z` のようなタグをpushすると `.github/workflows/release.yml` がLinux/macOS成果物を作成してReleaseに添付します。
 
 ## CSSカスタマイズ
 
