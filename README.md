@@ -2,6 +2,10 @@
 
 Markdown Viewer is a desktop Markdown viewer for Linux and macOS. It focuses on reading Markdown files quickly, while still offering light editing when needed.
 
+## Screenshot
+
+![Markdown Viewer showing the empty start screen with no recent files](docs/screenshot.png)
+
 ## Features
 
 - Open Markdown files directly from the file manager
@@ -22,32 +26,36 @@ Download the latest installer from [GitHub Releases](https://github.com/dainakai
 - Linux: use the `.deb` package or the `.AppImage`
 - macOS: use the `.dmg` package
 
-## 開発起動
+Note: macOS builds are currently unsigned. You may need to allow the app manually in macOS security settings until signed and notarized packages are available.
+
+## Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-## ビルドとダブルクリック登録
+## File Manager Integration
 
 ```bash
 npm install
 npm run register
 ```
 
-`npm run register` はビルド後、以下をユーザー環境に登録します。
+`npm run register` builds the app and registers the local Linux desktop integration:
 
 - `~/.local/bin/mdviewer`
 - `~/.local/share/applications/mdviewer.desktop`
 - `~/.local/share/mime/packages/mdviewer-markdown.xml`
 
-解除する場合:
+This lets supported file managers open Markdown files with Markdown Viewer from the file context menu or by double-clicking after the association is selected.
+
+To remove the local integration:
 
 ```bash
 npm run unregister
 ```
 
-## CSSカスタマイズ
+## CSS Customization
 
-起動時に `~/.config/mdviewer/user.css` があれば読み込みます。標準スタイルを上書きしたい場合はこのファイルを作成してください。
+Markdown Viewer loads `~/.config/mdviewer/user.css` on startup when the file exists. Create that file to override the default viewer styles.
