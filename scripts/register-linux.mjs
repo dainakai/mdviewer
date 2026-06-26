@@ -40,7 +40,7 @@ const npmPrefix = JSON.stringify(root);
 const electronCommand = JSON.stringify(electronBinaryPath);
 const wrapper = `#!/usr/bin/env bash
 set -euo pipefail
-exec ${electronCommand} --disable-gpu --disable-gpu-compositing --in-process-gpu ${npmPrefix} "$@"
+exec ${electronCommand} ${npmPrefix} "$@"
 `;
 await fs.writeFile(wrapperPath, wrapper, { mode: 0o755 });
 await fs.chmod(wrapperPath, 0o755);
