@@ -3,6 +3,8 @@ dist/
 release/
 .vite/
 .cache/
+AGENTS.md
+DEVELOPMENT.md
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
