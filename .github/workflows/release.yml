@@ -35,7 +35,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mdviewer-${{ matrix.artifact }}
-          path: release/*
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.dmg
+            release/*.zip
+            release/latest*.yml
+            release/*.blockmap
           if-no-files-found: error
 
   release:
@@ -49,5 +55,11 @@ jobs:
           path: artifacts
       - uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
+          files: |
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb
+            artifacts/**/*.dmg
+            artifacts/**/*.zip
+            artifacts/**/latest*.yml
+            artifacts/**/*.blockmap
           draft: false
