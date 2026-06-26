@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.3 - 2026-06-26
+
+### Added
+
+- Mermaid diagram rendering for fenced `mermaid` code blocks.
+- README screenshot showing a real document with tabs, outline entries, LaTeX math, and a Mermaid diagram.
+- Sample Markdown files used to capture the README screenshot.
+
+### Changed
+
+- Expanded install instructions for `.deb`, `.AppImage`, and `.dmg` packages, including what does and does not register OS file associations automatically.
+
 ## v0.1.2 - 2026-06-26
 
 Initial public release of Markdown Viewer.

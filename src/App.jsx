@@ -48,6 +48,20 @@ import './styles.css';
 
 const api = window.mdviewer;
 const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn'];
+const MERMAID_THEME_BY_APP_THEME = {
+  light: 'default',
+  dark: 'dark'
+};
+const MERMAID_THEME_VARIABLES = {
+  fontSize: '20px',
+  fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+};
+let mermaidModulePromise = null;
+
+function loadMermaid() {
+  mermaidModulePromise ??= import('mermaid').then((module) => module.default);
+  return mermaidModulePromise;
+}
 
 [
   ['bash', bash],
@@ -169,6 +183,16 @@ function createMarkdownRenderer() {
       });
     }
   });
+
+  const defaultFence = md.renderer.rules.fence || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+  md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+    const token = tokens[idx];
+    const language = token.info.trim().split(/\s+/)[0]?.toLowerCase();
+    if (language === 'mermaid') {
+      return `<div class="mermaid-block"><pre class="mermaid">${md.utils.escapeHtml(token.content.trim())}</pre></div>`;
+    }
+    return defaultFence(tokens, idx, options, env, self);
+  };
 
   const defaultHeadingOpen = md.renderer.rules.heading_open || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
   md.renderer.rules.heading_open = (tokens, idx, options, env, self) => {
@@ -766,6 +790,7 @@ function App() {
                 doc={paneDoc}
                 docsById={docsById}
                 zoom={zoom}
+                theme={theme}
                 isActive={activePaneId === pane.id}
                 canCloseEmptyPane={showSplit && pane.tabs.length === 0}
                 onActivatePane={() => setActivePaneId(pane.id)}
@@ -805,6 +830,7 @@ function Pane({
   doc,
   docsById,
   zoom,
+  theme,
   isActive,
   canCloseEmptyPane,
   onActivatePane,
@@ -823,8 +849,38 @@ function Pane({
   onPdf,
   onPreviewClick
 }) {
+  const paneRef = useRef(null);
+
+  useEffect(() => {
+    if (!doc || doc.isEditing) return undefined;
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      const nodes = paneRef.current?.querySelectorAll('.markdown-preview .mermaid:not([data-processed])');
+      if (!nodes?.length) return;
+
+      loadMermaid().then((mermaid) => {
+        if (cancelled) return;
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'strict',
+          theme: MERMAID_THEME_BY_APP_THEME[theme],
+          themeVariables: MERMAID_THEME_VARIABLES
+        });
+        mermaid.run({ nodes, suppressErrors: true }).catch((error) => {
+          console.error('Mermaid render failed', error);
+        });
+      });
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [doc, doc?.html, doc?.isEditing, theme]);
+
   return (
-    <div className={`pane ${isActive ? 'is-active' : ''}`} onMouseDown={onActivatePane}>
+    <div ref={paneRef} className={`pane ${isActive ? 'is-active' : ''}`} onMouseDown={onActivatePane}>
       <div className="tabbar">
         <div className="tabs">
           {pane.tabs.map((docId) => {
@@ -918,6 +974,7 @@ function Pane({
               />
             ) : (
               <article
+                key={`${doc.id}:${theme}:${doc.html.length}`}
                 className="markdown-preview"
                 onClick={(event) => onPreviewClick(event, doc)}
                 dangerouslySetInnerHTML={{ __html: doc.html }}

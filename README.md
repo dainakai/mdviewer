@@ -4,7 +4,7 @@ Markdown Viewer is a desktop Markdown viewer for Linux and macOS. It focuses on 
 
 ## Screenshot
 
-![Markdown Viewer showing the empty start screen with no recent files](docs/screenshot.png)
+![Markdown Viewer showing a Markdown document with tabs, outline navigation, LaTeX math, and a Mermaid diagram](docs/screenshot.png)
 
 ## Features
 
@@ -14,6 +14,7 @@ Markdown Viewer is a desktop Markdown viewer for Linux and macOS. It focuses on 
 - Automatic refresh when files change on disk
 - Simple edit mode with save/revert
 - LaTeX math support through KaTeX
+- Mermaid diagram support
 - Light/dark mode toggle
 - Ctrl+scroll zoom
 - Outline, recent files, search, print, and PDF export
@@ -23,8 +24,34 @@ Markdown Viewer is a desktop Markdown viewer for Linux and macOS. It focuses on 
 
 Download the latest installer from [GitHub Releases](https://github.com/dainakai/mdviewer/releases).
 
-- Linux: use the `.deb` package or the `.AppImage`
-- macOS: use the `.dmg` package
+### Ubuntu / Debian
+
+The `.deb` package is the best option when you want the app installed into the desktop environment.
+
+```bash
+sudo apt install ./Markdown-Viewer-<version>-linux-amd64.deb
+```
+
+You can also double-click the `.deb` file in the file manager and install it with the system software installer.
+
+The `.deb` package installs the app and desktop metadata. File managers may still require you to choose Markdown Viewer once as the default Markdown handler: right-click a `.md` file, choose **Open With**, select **Markdown Viewer**, and set it as the default if your desktop offers that option.
+
+### Linux AppImage
+
+The `.AppImage` package is portable. It runs without installing system files and does not register Markdown file associations by itself.
+
+```bash
+chmod +x Markdown-Viewer-<version>-linux-x86_64.AppImage
+./Markdown-Viewer-<version>-linux-x86_64.AppImage
+```
+
+Some desktops also let you run it by double-clicking after you mark it executable. Use the `.deb` package if you want normal desktop installation and file association metadata.
+
+### macOS
+
+Download the `.dmg`, open it, and drag **Markdown Viewer** into **Applications**. Launch it from Applications or by using **Open With** on a Markdown file.
+
+The macOS package declares Markdown file support, but it does not necessarily become the default handler automatically. To make it the default, select a `.md` file in Finder, choose **Get Info**, set **Open with** to Markdown Viewer, then choose **Change All**.
 
 Note: macOS builds are currently unsigned. You may need to allow the app manually in macOS security settings until signed and notarized packages are available.
 
