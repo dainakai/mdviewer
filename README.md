@@ -57,7 +57,7 @@ npm run dist:mac
 
 macOS用の署名済みdmgを安定して作るにはmacOS上、またはGitHub ActionsのmacOS runnerでビルドしてください。Linux上からはLinux用パッケージの作成が主対象です。
 
-GitHub Releasesで配布する場合は、`v0.1.0` のようなタグをpushすると `.github/workflows/release.yml` がLinux/macOS成果物を作成してReleaseに添付します。
+GitHub Releasesで配布する場合は、`vX.Y.Z` のようなタグをpushすると `.github/workflows/release.yml` がLinux/macOS成果物を作成してReleaseに添付します。
 
 ## CSSカスタマイズ
 

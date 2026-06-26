@@ -1,6 +1,6 @@
 {
   "name": "mdviewer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "description": "Desktop Markdown viewer with tabs, split panes, editing, and LaTeX support.",
   "desktopName": "mdviewer",
@@ -22,9 +22,9 @@
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on tcp:5173 && ELECTRON_RENDERER_URL=http://127.0.0.1:5173 electron --disable-gpu --disable-gpu-compositing --in-process-gpu .\"",
     "start": "electron --disable-gpu --disable-gpu-compositing --in-process-gpu .",
     "build": "vite build",
-    "dist:dir": "npm run build && electron-builder --dir",
-    "dist:linux": "npm run build && electron-builder --linux AppImage deb",
-    "dist:mac": "npm run build && electron-builder --mac dmg zip",
+    "dist:dir": "npm run build && electron-builder --dir --publish never",
+    "dist:linux": "npm run build && electron-builder --linux AppImage deb --publish never",
+    "dist:mac": "npm run build && electron-builder --mac dmg zip --publish never",
     "release": "npm run build && electron-builder --publish always",
     "register": "npm run build && node scripts/register-linux.mjs",
     "unregister": "node scripts/unregister-linux.mjs"
