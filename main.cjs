@@ -1,10 +1,12 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog, shell, clipboard, nativeTheme } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const fs = require('node:fs/promises');
 const fsSync = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdown', '.mkd', '.mkdn']);
+const STARTUP_UPDATE_CHECK_DELAY_MS = 3500;
 const isDev = Boolean(process.env.ELECTRON_RENDERER_URL);
 
 let mainWindow = null;
@@ -13,6 +15,11 @@ let rendererReady = false;
 let settingsCache = null;
 let activeWatchers = new Map();
 let watchDebounceTimers = new Map();
+let startupUpdateCheckScheduled = false;
+let updateCheckInProgress = false;
+let updateDownloadInProgress = false;
+let manualUpdateCheck = false;
+let updateDialogOpen = false;
 
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu');
@@ -85,6 +92,167 @@ function sendOpenFiles(filePaths) {
     return;
   }
   mainWindow.webContents.send('files:open', uniquePaths);
+}
+
+function updateDialogParent() {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
+}
+
+function updateErrorMessage(error) {
+  return error?.message ? String(error.message) : String(error ?? 'Unknown update error');
+}
+
+function canCheckForUpdates() {
+  return app.isPackaged && !isDev;
+}
+
+async function showUpdateDialog(options) {
+  updateDialogOpen = true;
+  try {
+    return await dialog.showMessageBox(updateDialogParent(), options);
+  } finally {
+    updateDialogOpen = false;
+  }
+}
+
+async function notifyUpdateError(error, shouldShowDialog) {
+  updateCheckInProgress = false;
+  updateDownloadInProgress = false;
+  manualUpdateCheck = false;
+  console.error('Update check failed:', error);
+
+  if (!shouldShowDialog || updateDialogOpen) return;
+  await showUpdateDialog({
+    type: 'error',
+    buttons: ['OK'],
+    title: 'Update Check Failed',
+    message: 'Could not check for updates.',
+    detail: updateErrorMessage(error)
+  });
+}
+
+async function promptToInstallDownloadedUpdate(info) {
+  if (updateDialogOpen) return;
+  const version = info?.version ? ` ${info.version}` : '';
+  const { response } = await showUpdateDialog({
+    type: 'info',
+    buttons: ['Restart and Install', 'Later'],
+    defaultId: 0,
+    cancelId: 1,
+    title: 'Update Ready',
+    message: `Markdown Viewer${version} has been downloaded.`,
+    detail: 'Restart Markdown Viewer now to finish installing the update.'
+  });
+
+  if (response === 0) {
+    autoUpdater.quitAndInstall(false, true);
+  }
+}
+
+async function promptToDownloadUpdate(info) {
+  updateCheckInProgress = false;
+  manualUpdateCheck = false;
+  if (updateDownloadInProgress || updateDialogOpen) return;
+
+  const currentVersion = app.getVersion();
+  const nextVersion = info?.version ?? 'a newer version';
+  const { response } = await showUpdateDialog({
+    type: 'info',
+    buttons: ['Download Update', 'Later'],
+    defaultId: 0,
+    cancelId: 1,
+    title: 'Update Available',
+    message: `Markdown Viewer ${nextVersion} is available.`,
+    detail: `You are currently using Markdown Viewer ${currentVersion}. Download the update now?`
+  });
+
+  if (response !== 0) return;
+
+  updateDownloadInProgress = true;
+  try {
+    await autoUpdater.downloadUpdate();
+  } catch (error) {
+    await notifyUpdateError(error, true);
+  }
+}
+
+function configureAutoUpdater() {
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.allowPrerelease = false;
+
+  autoUpdater.on('update-available', (info) => {
+    promptToDownloadUpdate(info).catch((error) => notifyUpdateError(error, manualUpdateCheck));
+  });
+
+  autoUpdater.on('update-not-available', async () => {
+    updateCheckInProgress = false;
+    const shouldNotify = manualUpdateCheck;
+    manualUpdateCheck = false;
+    if (!shouldNotify || updateDialogOpen) return;
+    await showUpdateDialog({
+      type: 'info',
+      buttons: ['OK'],
+      title: 'No Updates Available',
+      message: 'Markdown Viewer is up to date.',
+      detail: `Current version: ${app.getVersion()}`
+    });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    updateDownloadInProgress = false;
+    promptToInstallDownloadedUpdate(info).catch((error) => notifyUpdateError(error, true));
+  });
+
+  autoUpdater.on('error', (error) => {
+    notifyUpdateError(error, manualUpdateCheck || updateDownloadInProgress).catch((dialogError) => {
+      console.error('Update error dialog failed:', dialogError);
+    });
+  });
+}
+
+async function checkForUpdates({ manual = false } = {}) {
+  if (!canCheckForUpdates()) {
+    if (manual) {
+      await showUpdateDialog({
+        type: 'info',
+        buttons: ['OK'],
+        title: 'Updates Unavailable',
+        message: 'Update checks are only available in packaged builds.',
+        detail: 'Run an installed release build to check GitHub Releases for updates.'
+      });
+    }
+    return;
+  }
+
+  if (updateCheckInProgress || updateDownloadInProgress) {
+    if (manual && !updateDialogOpen) {
+      await showUpdateDialog({
+        type: 'info',
+        buttons: ['OK'],
+        title: 'Update Check In Progress',
+        message: 'Markdown Viewer is already checking for or downloading an update.'
+      });
+    }
+    return;
+  }
+
+  updateCheckInProgress = true;
+  manualUpdateCheck = manual;
+
+  try {
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    await notifyUpdateError(error, manual);
+  }
+}
+
+function scheduleStartupUpdateCheck() {
+  if (startupUpdateCheckScheduled || !canCheckForUpdates()) return;
+  startupUpdateCheckScheduled = true;
+  setTimeout(() => {
+    checkForUpdates({ manual: false }).catch((error) => notifyUpdateError(error, false));
+  }, STARTUP_UPDATE_CHECK_DELAY_MS);
 }
 
 function createMainWindow() {
@@ -172,6 +340,17 @@ function createMenu() {
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Check for Updates...',
+          click: () => {
+            checkForUpdates({ manual: true }).catch((error) => notifyUpdateError(error, true));
+          }
+        }
       ]
     }
   ];
@@ -369,8 +548,10 @@ if (!gotSingleInstanceLock) {
 } else {
   app.whenReady().then(() => {
     pendingOpenFiles = getMarkdownArgs(process.argv);
+    configureAutoUpdater();
     createMenu();
     createMainWindow();
+    scheduleStartupUpdateCheck();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

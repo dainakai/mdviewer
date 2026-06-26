@@ -17,6 +17,7 @@ Markdown Viewer is a desktop Markdown viewer for Linux and macOS. It focuses on 
 - Mermaid diagram support
 - Light/dark mode toggle
 - Ctrl+scroll zoom
+- Startup update checks with user-approved download and restart
 - Outline, recent files, search, print, and PDF export
 - CSS overrides from `~/.config/mdviewer/user.css`
 
@@ -54,6 +55,14 @@ Download the `.dmg`, open it, and drag **Markdown Viewer** into **Applications**
 The macOS package declares Markdown file support, but it does not necessarily become the default handler automatically. To make it the default, select a `.md` file in Finder, choose **Get Info**, set **Open with** to Markdown Viewer, then choose **Change All**.
 
 Note: macOS builds are currently unsigned. You may need to allow the app manually in macOS security settings until signed and notarized packages are available.
+
+## Updates
+
+Installed packaged builds check GitHub Releases on startup. When a newer version is available, Markdown Viewer asks before downloading it and asks again before restarting to install it.
+
+You can also use **Help > Check for Updates...** to check manually. Update checks are disabled in local development runs.
+
+Note: reliable macOS auto-update requires signed packages. Current unsigned macOS builds may still require manual replacement from GitHub Releases.
 
 ## Development
 
