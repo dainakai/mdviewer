@@ -1,8 +1,8 @@
 {
   "name": "mdviewer",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": false,
-  "description": "Desktop Markdown viewer with tabs, split panes, editing, and LaTeX support.",
+  "description": "Desktop Markdown viewer with tabs, split panes, LaTeX math, Mermaid diagrams, and light editing.",
   "desktopName": "mdviewer",
   "license": "MIT",
   "author": {
@@ -41,6 +41,7 @@
     "katex": "^0.16.27",
     "lucide-react": "^0.562.0",
     "markdown-it": "^14.2.0",
+    "mermaid": "^11.16.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "vite": "^8.1.0",

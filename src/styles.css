@@ -541,6 +541,35 @@ button:disabled {
   background: transparent;
 }
 
+.mermaid-block {
+  display: block;
+  margin: 1.2em 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  overflow-x: auto;
+  background: var(--pre-bg);
+  text-align: center;
+}
+
+.mermaid-block .mermaid {
+  display: block;
+  margin: 0 auto;
+  background: transparent;
+  width: max-content;
+  min-width: 760px;
+  max-width: none;
+  text-align: center;
+}
+
+.mermaid-block svg {
+  display: block;
+  width: auto;
+  max-width: none;
+  height: auto;
+  margin: 0 auto;
+}
+
 .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
