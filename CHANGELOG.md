@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.4 - 2026-06-26
+
+### Added
+
+- Startup update checks for packaged builds using GitHub Releases.
+- User confirmation before downloading an available update and before restarting to install it.
+- Manual **Help > Check for Updates...** menu action.
+
+### Changed
+
+- Documented update behavior and the current macOS signing caveat.
+
 ## v0.1.3 - 2026-06-26
 
 ### Added
