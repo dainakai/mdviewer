@@ -21,10 +21,9 @@ let updateDownloadInProgress = false;
 let manualUpdateCheck = false;
 let updateDialogOpen = false;
 
-app.disableHardwareAcceleration();
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-gpu-compositing');
-app.commandLine.appendSwitch('in-process-gpu');
+if (process.env.MDVIEWER_DISABLE_GPU === '1') {
+  app.disableHardwareAcceleration();
+}
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 

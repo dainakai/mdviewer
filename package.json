@@ -1,6 +1,6 @@
 {
   "name": "mdviewer",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": false,
   "description": "Desktop Markdown viewer with tabs, split panes, LaTeX math, Mermaid diagrams, and light editing.",
   "desktopName": "mdviewer",
@@ -19,8 +19,8 @@
   },
   "main": "main.cjs",
   "scripts": {
-    "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on tcp:5173 && ELECTRON_RENDERER_URL=http://127.0.0.1:5173 electron --disable-gpu --disable-gpu-compositing --in-process-gpu .\"",
-    "start": "electron --disable-gpu --disable-gpu-compositing --in-process-gpu .",
+    "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on tcp:5173 && ELECTRON_RENDERER_URL=http://127.0.0.1:5173 electron .\"",
+    "start": "electron .",
     "build": "vite build",
     "check": "npm run build && npm audit",
     "dist:dir": "npm run build && electron-builder --dir --publish never",

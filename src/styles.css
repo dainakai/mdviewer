@@ -453,6 +453,7 @@ button:disabled {
   padding: 34px 44px 80px;
   font-size: calc(16px * var(--preview-zoom));
   line-height: 1.68;
+  contain: layout paint style;
 }
 
 .markdown-preview > :first-child {
@@ -494,6 +495,7 @@ button:disabled {
   max-width: 100%;
   height: auto;
   border-radius: 6px;
+  content-visibility: auto;
 }
 
 .markdown-preview blockquote {
@@ -534,6 +536,7 @@ button:disabled {
   padding: 15px;
   overflow: auto;
   background: var(--pre-bg);
+  content-visibility: auto;
 }
 
 .markdown-preview pre.hljs code {
@@ -550,6 +553,7 @@ button:disabled {
   overflow-x: auto;
   background: var(--pre-bg);
   text-align: center;
+  content-visibility: auto;
 }
 
 .mermaid-block .mermaid {

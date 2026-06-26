@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.5 - 2026-06-26
+
+### Changed
+
+- Re-enabled Electron hardware acceleration for smoother document scrolling.
+- Removed GPU-disabling launch flags from local development and Linux desktop registration.
+- Added `MDVIEWER_DISABLE_GPU=1` as an opt-out for environments with GPU driver issues.
+- Reduced preview repaint work for heavy images, code blocks, and Mermaid diagrams.
+
 ## v0.1.4 - 2026-06-26
 
 ### Added
