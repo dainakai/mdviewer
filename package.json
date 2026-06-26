@@ -1,0 +1,111 @@
+{
+  "name": "mdviewer",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Desktop Markdown viewer with tabs, split panes, editing, and LaTeX support.",
+  "desktopName": "mdviewer",
+  "license": "MIT",
+  "author": {
+    "name": "dainakai",
+    "email": "dainakai@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/dainakai/mdviewer#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dainakai/mdviewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dainakai/mdviewer/issues"
+  },
+  "main": "main.cjs",
+  "scripts": {
+    "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on tcp:5173 && ELECTRON_RENDERER_URL=http://127.0.0.1:5173 electron --disable-gpu --disable-gpu-compositing --in-process-gpu .\"",
+    "start": "electron --disable-gpu --disable-gpu-compositing --in-process-gpu .",
+    "build": "vite build",
+    "dist:dir": "npm run build && electron-builder --dir",
+    "dist:linux": "npm run build && electron-builder --linux AppImage deb",
+    "dist:mac": "npm run build && electron-builder --mac dmg zip",
+    "release": "npm run build && electron-builder --publish always",
+    "register": "npm run build && node scripts/register-linux.mjs",
+    "unregister": "node scripts/unregister-linux.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@mdit/plugin-tex": "^0.24.2",
+    "@vitejs/plugin-react": "^5.1.1",
+    "concurrently": "^9.2.1",
+    "electron": "^42.5.0",
+    "electron-builder": "^26.15.3",
+    "highlight.js": "^11.11.1",
+    "katex": "^0.16.27",
+    "lucide-react": "^0.562.0",
+    "markdown-it": "^14.2.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "vite": "^8.1.0",
+    "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.dainakai.mdviewer",
+    "productName": "Markdown Viewer",
+    "artifactName": "Markdown-Viewer-${version}-${os}-${arch}.${ext}",
+    "files": [
+      "dist/**/*",
+      "main.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "linux": {
+      "category": "Office",
+      "syncDesktopName": true,
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "mimeTypes": [
+        "text/markdown",
+        "text/x-markdown"
+      ]
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "md",
+          "markdown",
+          "mdown",
+          "mkd",
+          "mkdn"
+        ],
+        "name": "Markdown Document",
+        "role": "Viewer",
+        "mimeType": "text/markdown"
+      }
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "dainakai",
+        "repo": "mdviewer"
+      }
+    ]
+  }
+}
