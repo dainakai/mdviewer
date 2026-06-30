@@ -116,7 +116,7 @@ function updateErrorMessage(error) {
 }
 
 function canCheckForUpdates() {
-  return app.isPackaged && !isDev;
+  return app.isPackaged && !isDev && ['linux', 'win32'].includes(process.platform);
 }
 
 async function showUpdateDialog(options) {
@@ -248,7 +248,9 @@ async function checkForUpdates({ manual = false } = {}) {
         buttons: ['OK'],
         title: 'Updates Unavailable',
         message: 'Update checks are only available in packaged builds.',
-        detail: 'Run an installed release build to check GitHub Releases for updates.'
+        detail: process.platform === 'darwin'
+          ? 'macOS releases are source-only for now. Use the GitHub Release source archive or clone the repository.'
+          : 'Run an installed Linux or Windows release build to check GitHub Releases for updates.'
       });
     }
     return;
