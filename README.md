@@ -10,6 +10,7 @@ Markdown Viewer is a desktop Markdown viewer for Linux and macOS. It focuses on 
 
 - Open Markdown files directly from the file manager
 - Multiple tabs with split panes
+- Drag tabs between split panes and split tabs left or right from the tab context menu
 - Reuse an existing tab when the same file is opened again
 - Automatic refresh when files change on disk
 - Simple edit mode with save/revert
@@ -17,7 +18,8 @@ Markdown Viewer is a desktop Markdown viewer for Linux and macOS. It focuses on 
 - Mermaid diagram support
 - Light/dark mode toggle
 - Ctrl+scroll zoom
-- Startup update checks with user-approved download and restart
+- Startup update checks with one-step install/restart confirmation and per-version skip
+- In-app Help menu for manual update checks
 - Outline, recent files, search, print, and PDF export
 - CSS overrides from `~/.config/mdviewer/user.css`
 
@@ -58,9 +60,9 @@ Note: macOS builds are currently unsigned. You may need to allow the app manuall
 
 ## Updates
 
-Installed packaged builds check GitHub Releases on startup. When a newer version is available, Markdown Viewer asks before downloading it and asks again before restarting to install it.
+Installed packaged builds check GitHub Releases on startup. When a newer version is available, Markdown Viewer asks once before downloading it, installing it, and restarting. You can skip a specific version from the startup prompt so it is not shown again automatically.
 
-You can also use **Help > Check for Updates...** to check manually. Update checks are disabled in local development runs.
+You can also use **Help > Check for Updates...** to check manually from the native menu or the in-app Help button. Manual update checks ask once before downloading, installing, and restarting. Update checks are disabled in local development runs.
 
 Note: reliable macOS auto-update requires signed packages. Current unsigned macOS builds may still require manual replacement from GitHub Releases.
 

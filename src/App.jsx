@@ -29,6 +29,7 @@ import {
   ExternalLink,
   FilePlus2,
   FolderOpen,
+  HelpCircle,
   PanelLeftClose,
   PanelLeftOpen,
   Moon,
@@ -127,6 +128,11 @@ function isMarkdownFile(filePath) {
 function basename(filePath) {
   const clean = filePath.replace(/\/$/, '');
   return clean.slice(clean.lastIndexOf('/') + 1);
+}
+
+function pdfNameFromMarkdownName(fileName) {
+  const baseName = basename(fileName || 'markdown').replace(/\.[^.]+$/, '');
+  return `${baseName || 'markdown'}.pdf`;
 }
 
 function dirname(filePath) {
@@ -293,6 +299,8 @@ function App() {
   const [status, setStatus] = useState('Ready');
   const [searchText, setSearchText] = useState('');
   const searchInputRef = useRef(null);
+  const [tabMenu, setTabMenu] = useState(null);
+  const [helpMenuOpen, setHelpMenuOpen] = useState(false);
 
   const docsById = useMemo(() => new Map(documents.map((doc) => [doc.id, doc])), [documents]);
   const docsByPath = useMemo(() => new Map(documents.map((doc) => [doc.path, doc])), [documents]);
@@ -473,6 +481,53 @@ function App() {
     setActivePaneId('left');
   }, []);
 
+  const splitTabToPane = useCallback((docId, targetPaneId) => {
+    if (!docId) return;
+    setShowSplit(true);
+    setPanes((current) =>
+      current.map((pane) => {
+        if (pane.id !== targetPaneId) return pane;
+        return {
+          ...pane,
+          tabs: pane.tabs.includes(docId) ? pane.tabs : [...pane.tabs, docId],
+          activeId: docId
+        };
+      })
+    );
+    setActivePaneId(targetPaneId);
+  }, []);
+
+  const moveTabToPane = useCallback((docId, fromPaneId, targetPaneId) => {
+    if (!docId || !fromPaneId || !targetPaneId) return;
+    if (fromPaneId === targetPaneId) {
+      setActiveTab(targetPaneId, docId);
+      return;
+    }
+
+    setShowSplit(true);
+    setPanes((current) =>
+      current.map((pane) => {
+        if (pane.id === fromPaneId) {
+          const nextTabs = pane.tabs.filter((id) => id !== docId);
+          return {
+            ...pane,
+            tabs: nextTabs,
+            activeId: pane.activeId === docId ? nextTabs[nextTabs.length - 1] ?? null : pane.activeId
+          };
+        }
+        if (pane.id === targetPaneId) {
+          return {
+            ...pane,
+            tabs: pane.tabs.includes(docId) ? pane.tabs : [...pane.tabs, docId],
+            activeId: docId
+          };
+        }
+        return pane;
+      })
+    );
+    setActivePaneId(targetPaneId);
+  }, [setActiveTab]);
+
   const toggleSplit = useCallback(() => {
     setShowSplit((current) => {
       const next = !current;
@@ -511,30 +566,22 @@ function App() {
     if (!activeDoc) return;
     const fromId = activePaneId;
     const toId = fromId === 'left' ? 'right' : 'left';
-    setShowSplit(true);
-    setPanes((current) =>
-      current.map((pane) => {
-        if (pane.id === fromId) {
-          const nextTabs = pane.tabs.filter((id) => id !== activeDoc.id);
-          return { ...pane, tabs: nextTabs, activeId: nextTabs[nextTabs.length - 1] ?? null };
-        }
-        if (pane.id === toId) {
-          return {
-            ...pane,
-            tabs: pane.tabs.includes(activeDoc.id) ? pane.tabs : [...pane.tabs, activeDoc.id],
-            activeId: activeDoc.id
-          };
-        }
-        return pane;
-      })
-    );
-    setActivePaneId(toId);
-  }, [activeDoc, activePaneId]);
+    moveTabToPane(activeDoc.id, fromId, toId);
+  }, [activeDoc, activePaneId, moveTabToPane]);
 
   const updateZoom = useCallback((nextZoom) => {
     const clampedZoom = clamp(nextZoom, 0.55, 2.4);
     setZoom(clampedZoom);
     api.setZoom(clampedZoom);
+  }, []);
+
+  const checkForUpdates = useCallback(async () => {
+    setHelpMenuOpen(false);
+    try {
+      await api.checkForUpdates();
+    } catch (error) {
+      setStatus(`Update check failed: ${error.message}`);
+    }
   }, []);
 
   const toggleTheme = useCallback(() => {
@@ -656,6 +703,34 @@ function App() {
   }, [watchedPathKey]);
 
   useEffect(() => {
+    if (!tabMenu) return undefined;
+    const closeMenu = () => setTabMenu(null);
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') closeMenu();
+    };
+    window.addEventListener('click', closeMenu);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('click', closeMenu);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [tabMenu]);
+
+  useEffect(() => {
+    if (!helpMenuOpen) return undefined;
+    const closeMenu = () => setHelpMenuOpen(false);
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') closeMenu();
+    };
+    window.addEventListener('click', closeMenu);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('click', closeMenu);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [helpMenuOpen]);
+
+  useEffect(() => {
     const handleKeyDown = (event) => {
       if (!event.ctrlKey) return;
       const key = event.key.toLowerCase();
@@ -728,6 +803,18 @@ function App() {
           <ToolbarButton title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'} onClick={toggleTheme}>
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </ToolbarButton>
+          <div className="help-menu-wrap" onClick={(event) => event.stopPropagation()}>
+            <ToolbarButton title="Help" active={helpMenuOpen} onClick={() => setHelpMenuOpen((current) => !current)}>
+              <HelpCircle size={18} />
+            </ToolbarButton>
+            {helpMenuOpen && (
+              <div className="help-menu">
+                <button type="button" onClick={checkForUpdates}>
+                  Check for Updates...
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <div className="search-box">
           <Search size={16} />
@@ -822,6 +909,8 @@ function App() {
                 onActivateTab={(docId) => setActiveTab(pane.id, docId)}
                 onCloseTab={(docId) => closeTab(pane.id, docId)}
                 onCloseEmptyPane={() => closeEmptyPane(pane.id)}
+                onMoveTab={moveTabToPane}
+                onOpenTabMenu={(menu) => setTabMenu(menu)}
                 onOpenDialog={openDialog}
                 onChangeDocument={handleDocumentChange}
                 onReload={(force) => paneDoc && reloadDocument(paneDoc.id, force)}
@@ -835,13 +924,58 @@ function App() {
                 onReveal={() => paneDoc && api.revealFile(paneDoc.path)}
                 onCopyPath={() => paneDoc && api.writeClipboard(paneDoc.path)}
                 onPrint={() => api.print()}
-                onPdf={() => api.printPdf()}
+                onPdf={() => paneDoc && api.printPdf({ defaultPath: pdfNameFromMarkdownName(paneDoc.name) })}
                 onPreviewClick={handlePreviewClick}
               />
             );
           })}
         </section>
       </main>
+
+      {tabMenu && (
+        <div
+          className="tab-context-menu"
+          style={{ left: tabMenu.x, top: tabMenu.y }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              splitTabToPane(tabMenu.docId, 'left');
+              setTabMenu(null);
+            }}
+          >
+            Split Left
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              splitTabToPane(tabMenu.docId, 'right');
+              setTabMenu(null);
+            }}
+          >
+            Split Right
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              moveTabToPane(tabMenu.docId, tabMenu.paneId, tabMenu.paneId === 'left' ? 'right' : 'left');
+              setTabMenu(null);
+            }}
+          >
+            Move to Other Pane
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              closeTab(tabMenu.paneId, tabMenu.docId);
+              setTabMenu(null);
+            }}
+          >
+            Close
+          </button>
+        </div>
+      )}
 
       <footer className="statusbar">
         <span>{status}</span>
@@ -863,6 +997,8 @@ function Pane({
   onActivateTab,
   onCloseTab,
   onCloseEmptyPane,
+  onMoveTab,
+  onOpenTabMenu,
   onOpenDialog,
   onChangeDocument,
   onReload,
@@ -943,7 +1079,26 @@ function Pane({
   return (
     <div ref={paneRef} className={`pane ${isActive ? 'is-active' : ''}`} onMouseDown={onActivatePane}>
       <div className="tabbar">
-        <div className="tabs">
+        <div
+          className="tabs"
+          onDragOver={(event) => {
+            if (Array.from(event.dataTransfer.types).includes('application/x-mdviewer-tab')) {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'move';
+            }
+          }}
+          onDrop={(event) => {
+            const raw = event.dataTransfer.getData('application/x-mdviewer-tab');
+            if (!raw) return;
+            event.preventDefault();
+            try {
+              const draggedTab = JSON.parse(raw);
+              onMoveTab(draggedTab.docId, draggedTab.paneId, pane.id);
+            } catch {
+              // Ignore drops that were not created by Markdown Viewer tabs.
+            }
+          }}
+        >
           {pane.tabs.map((docId) => {
             const tabDoc = docsById.get(docId);
             if (!tabDoc) return null;
@@ -952,6 +1107,21 @@ function Pane({
                 key={docId}
                 className={`tab ${pane.activeId === docId ? 'is-active' : ''}`}
                 type="button"
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = 'move';
+                  event.dataTransfer.setData('application/x-mdviewer-tab', JSON.stringify({ docId, paneId: pane.id }));
+                  event.dataTransfer.setData('text/plain', tabDoc.path);
+                }}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  onOpenTabMenu({
+                    x: Math.max(8, Math.min(event.clientX, window.innerWidth - 210)),
+                    y: Math.max(8, Math.min(event.clientY, window.innerHeight - 170)),
+                    paneId: pane.id,
+                    docId
+                  });
+                }}
                 onClick={() => onActivateTab(docId)}
                 title={tabDoc.path}
               >

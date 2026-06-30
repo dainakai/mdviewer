@@ -30,6 +30,7 @@ let watchDebounceTimers = new Map();
 let startupUpdateCheckScheduled = false;
 let updateCheckInProgress = false;
 let updateDownloadInProgress = false;
+let installUpdateAfterDownload = false;
 let manualUpdateCheck = false;
 let updateDialogOpen = false;
 
@@ -68,6 +69,7 @@ async function readSettings() {
   }
   settingsCache.zoom = Number.isFinite(settingsCache.zoom) ? settingsCache.zoom : 1;
   settingsCache.recentFiles = Array.isArray(settingsCache.recentFiles) ? settingsCache.recentFiles : [];
+  settingsCache.skippedUpdateVersion = typeof settingsCache.skippedUpdateVersion === 'string' ? settingsCache.skippedUpdateVersion : null;
   return settingsCache;
 }
 
@@ -129,6 +131,7 @@ async function showUpdateDialog(options) {
 async function notifyUpdateError(error, shouldShowDialog) {
   updateCheckInProgress = false;
   updateDownloadInProgress = false;
+  installUpdateAfterDownload = false;
   manualUpdateCheck = false;
   console.error('Update check failed:', error);
 
@@ -142,44 +145,51 @@ async function notifyUpdateError(error, shouldShowDialog) {
   });
 }
 
-async function promptToInstallDownloadedUpdate(info) {
-  if (updateDialogOpen) return;
-  const version = info?.version ? ` ${info.version}` : '';
-  const { response } = await showUpdateDialog({
-    type: 'info',
-    buttons: ['Restart and Install', 'Later'],
-    defaultId: 0,
-    cancelId: 1,
-    title: 'Update Ready',
-    message: `Markdown Viewer${version} has been downloaded.`,
-    detail: 'Restart Markdown Viewer now to finish installing the update.'
-  });
-
-  if (response === 0) {
-    autoUpdater.quitAndInstall(false, true);
-  }
-}
-
-async function promptToDownloadUpdate(info) {
+async function promptToInstallUpdate(info) {
   updateCheckInProgress = false;
+  const isManual = manualUpdateCheck;
   manualUpdateCheck = false;
   if (updateDownloadInProgress || updateDialogOpen) return;
 
   const currentVersion = app.getVersion();
-  const nextVersion = info?.version ?? 'a newer version';
+  const nextVersion = info?.version ?? null;
+  const displayVersion = nextVersion ?? 'a newer version';
+
+  if (!isManual && nextVersion) {
+    const settings = await readSettings();
+    if (settings.skippedUpdateVersion === nextVersion) return;
+  }
+
+  const buttons = isManual ? ['Install and Restart', 'Cancel'] : ['Install and Restart', 'Skip This Version', 'Later'];
   const { response } = await showUpdateDialog({
     type: 'info',
-    buttons: ['Download Update', 'Later'],
+    buttons,
     defaultId: 0,
-    cancelId: 1,
+    cancelId: isManual ? 1 : 2,
     title: 'Update Available',
-    message: `Markdown Viewer ${nextVersion} is available.`,
-    detail: `You are currently using Markdown Viewer ${currentVersion}. Download the update now?`
+    message: `Markdown Viewer ${displayVersion} is available.`,
+    detail: `You are currently using Markdown Viewer ${currentVersion}. Install the update and restart now?`
   });
+
+  if (!isManual && response === 1 && nextVersion) {
+    await updateSettings((settings) => {
+      settings.skippedUpdateVersion = nextVersion;
+      return settings;
+    });
+    return;
+  }
 
   if (response !== 0) return;
 
+  if (nextVersion) {
+    await updateSettings((settings) => {
+      if (settings.skippedUpdateVersion === nextVersion) settings.skippedUpdateVersion = null;
+      return settings;
+    });
+  }
+
   updateDownloadInProgress = true;
+  installUpdateAfterDownload = true;
   try {
     await autoUpdater.downloadUpdate();
   } catch (error) {
@@ -193,7 +203,7 @@ function configureAutoUpdater() {
   autoUpdater.allowPrerelease = false;
 
   autoUpdater.on('update-available', (info) => {
-    promptToDownloadUpdate(info).catch((error) => notifyUpdateError(error, manualUpdateCheck));
+    promptToInstallUpdate(info).catch((error) => notifyUpdateError(error, manualUpdateCheck));
   });
 
   autoUpdater.on('update-not-available', async () => {
@@ -212,7 +222,15 @@ function configureAutoUpdater() {
 
   autoUpdater.on('update-downloaded', (info) => {
     updateDownloadInProgress = false;
-    promptToInstallDownloadedUpdate(info).catch((error) => notifyUpdateError(error, true));
+    if (!installUpdateAfterDownload) return;
+    installUpdateAfterDownload = false;
+    try {
+      autoUpdater.quitAndInstall(false, true);
+    } catch (error) {
+      notifyUpdateError(error, true).catch((dialogError) => {
+        console.error('Update install failed:', dialogError);
+      });
+    }
   });
 
   autoUpdater.on('error', (error) => {
@@ -433,6 +451,11 @@ ipcMain.handle('settings:setTheme', async (_event, theme) => {
   });
 });
 
+ipcMain.handle('updates:check', async () => {
+  await checkForUpdates({ manual: true });
+  return true;
+});
+
 ipcMain.handle('config:userCss', async () => {
   const cssPath = path.join(os.homedir(), '.config', 'mdviewer', 'user.css');
   try {
@@ -523,18 +546,31 @@ ipcMain.handle('view:print', async () => {
   mainWindow?.webContents.print({ printBackground: true });
 });
 
-ipcMain.handle('view:printPdf', async () => {
+function pdfFileName(value) {
+  const fileName = path.basename(String(value || 'markdown.pdf').trim() || 'markdown.pdf');
+  return path.extname(fileName).toLowerCase() === '.pdf' ? fileName : `${fileName}.pdf`;
+}
+
+function pdfFilePath(value) {
+  return path.extname(value).toLowerCase() === '.pdf' ? value : `${value}.pdf`;
+}
+
+ipcMain.handle('view:printPdf', async (_event, options = {}) => {
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Export PDF',
-    defaultPath: 'markdown.pdf',
+    defaultPath: pdfFileName(options?.defaultPath),
     filters: [{ name: 'PDF', extensions: ['pdf'] }]
   });
   if (result.canceled || !result.filePath) return false;
   const pdf = await mainWindow.webContents.printToPDF({
     printBackground: true,
-    marginsType: 0
+    pageSize: 'A4',
+    preferCSSPageSize: true,
+    margins: {
+      marginType: 'default'
+    }
   });
-  await fs.writeFile(result.filePath, pdf);
+  await fs.writeFile(pdfFilePath(result.filePath), pdf);
   return true;
 });
 
