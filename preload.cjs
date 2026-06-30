@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('mdviewer', {
   setTheme: (theme) => ipcRenderer.invoke('settings:setTheme', theme),
   loadUserCss: () => ipcRenderer.invoke('config:userCss'),
   readFile: (filePath) => ipcRenderer.invoke('file:read', filePath),
+  readAsset: (filePath) => ipcRenderer.invoke('file:readAsset', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('file:write', filePath, content),
   openFilesDialog: () => ipcRenderer.invoke('file:openDialog'),
   watchFiles: (filePaths) => ipcRenderer.invoke('file:watch', filePaths),

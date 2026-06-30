@@ -57,6 +57,7 @@ const MERMAID_THEME_VARIABLES = {
   fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
 };
 let mermaidModulePromise = null;
+let assetVersionCounter = 0;
 
 function loadMermaid() {
   mermaidModulePromise ??= import('mermaid').then((module) => module.default);
@@ -106,6 +107,11 @@ function fileUrlFromPath(filePath) {
   return `file://${filePath.split('/').map(encodeURIComponent).join('/')}`;
 }
 
+function createAssetVersion() {
+  assetVersionCounter += 1;
+  return `${Date.now()}-${assetVersionCounter}`;
+}
+
 function splitFileUrl(value) {
   const withoutScheme = value.replace(/^file:\/\//, '');
   const hashIndex = withoutScheme.indexOf('#');
@@ -130,6 +136,7 @@ function dirname(filePath) {
 
 function resolveLocalReference(rawHref, baseDirectory) {
   if (!rawHref || /^(https?:|mailto:|data:|#)/i.test(rawHref)) return rawHref;
+  if (/^file:\/\//i.test(rawHref)) return rawHref;
   const [withoutHash, hash = ''] = rawHref.split('#');
   const [withoutQuery, query = ''] = withoutHash.split('?');
   const resolvedPath = withoutQuery.startsWith('/')
@@ -138,6 +145,11 @@ function resolveLocalReference(rawHref, baseDirectory) {
   const querySuffix = query ? `?${query}` : '';
   const hashSuffix = hash ? `#${hash}` : '';
   return `${fileUrlFromPath(resolvedPath)}${querySuffix}${hashSuffix}`;
+}
+
+function localPathFromFileUrl(value) {
+  const fileUrl = new URL(value);
+  return decodeURIComponent(fileUrl.pathname);
 }
 
 function slugify(value) {
@@ -212,7 +224,12 @@ function createMarkdownRenderer() {
   md.renderer.rules.image = (tokens, idx, options, env, self) => {
     const token = tokens[idx];
     const src = token.attrGet('src');
-    token.attrSet('src', resolveLocalReference(src, env.baseDirectory));
+    const resolvedSrc = resolveLocalReference(src, env.baseDirectory);
+    token.attrSet('src', resolvedSrc);
+    if (resolvedSrc && /^file:\/\//i.test(resolvedSrc)) {
+      token.attrSet('data-mdviewer-local-image', localPathFromFileUrl(resolvedSrc));
+      token.attrSet('data-mdviewer-asset-version', env.assetVersion);
+    }
     token.attrSet('loading', 'lazy');
     return defaultImage(tokens, idx, options, env, self);
   };
@@ -231,11 +248,12 @@ function createMarkdownRenderer() {
 
 const markdown = createMarkdownRenderer();
 
-function renderMarkdown(content, filePath) {
+function renderMarkdown(content, filePath, assetVersion) {
   const env = {
     baseDirectory: dirname(filePath),
     headings: [],
-    headingCounts: new Map()
+    headingCounts: new Map(),
+    assetVersion
   };
   const html = markdown.render(content || '', env);
   return { html, headings: env.headings };
@@ -324,7 +342,8 @@ function App() {
       try {
         const loaded = await api.readFile(filePath);
         const id = `${loaded.path}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-        const rendered = renderMarkdown(loaded.content, loaded.path);
+        const assetVersion = createAssetVersion();
+        const rendered = renderMarkdown(loaded.content, loaded.path, assetVersion);
         const doc = {
           id,
           path: loaded.path,
@@ -333,6 +352,7 @@ function App() {
           content: loaded.content,
           savedContent: loaded.content,
           mtimeMs: loaded.mtimeMs,
+          assetVersion,
           html: rendered.html,
           headings: rendered.headings,
           isEditing: false,
@@ -365,12 +385,14 @@ function App() {
     }
     try {
       const loaded = await api.readFile(doc.path);
-      const rendered = renderMarkdown(loaded.content, loaded.path);
+      const assetVersion = createAssetVersion();
+      const rendered = renderMarkdown(loaded.content, loaded.path, assetVersion);
       updateDocument(docId, (current) => ({
         ...current,
         content: loaded.content,
         savedContent: loaded.content,
         mtimeMs: loaded.mtimeMs,
+        assetVersion,
         html: rendered.html,
         headings: rendered.headings,
         dirty: false,
@@ -391,12 +413,14 @@ function App() {
     if (!doc) return;
     try {
       const saved = await api.writeFile(doc.path, doc.content);
-      const rendered = renderMarkdown(saved.content, saved.path);
+      const assetVersion = createAssetVersion();
+      const rendered = renderMarkdown(saved.content, saved.path, assetVersion);
       updateDocument(doc.id, (current) => ({
         ...current,
         content: saved.content,
         savedContent: saved.content,
         mtimeMs: saved.mtimeMs,
+        assetVersion,
         html: rendered.html,
         headings: rendered.headings,
         dirty: false,
@@ -539,8 +563,9 @@ function App() {
   const toggleDocumentEdit = useCallback((docId) => {
     updateDocument(docId, (doc) => {
       if (doc.isEditing) {
-        const rendered = renderMarkdown(doc.content, doc.path);
-        return { ...doc, html: rendered.html, headings: rendered.headings, isEditing: false };
+        const assetVersion = createAssetVersion();
+        const rendered = renderMarkdown(doc.content, doc.path, assetVersion);
+        return { ...doc, assetVersion, html: rendered.html, headings: rendered.headings, isEditing: false };
       }
       return { ...doc, isEditing: true };
     });
@@ -802,8 +827,9 @@ function App() {
                 onReload={(force) => paneDoc && reloadDocument(paneDoc.id, force)}
                 onSave={() => paneDoc && saveDocument(paneDoc.id)}
                 onRevert={() => paneDoc && updateDocument(paneDoc.id, (doc) => {
-                  const rendered = renderMarkdown(doc.savedContent, doc.path);
-                  return { ...doc, content: doc.savedContent, html: rendered.html, headings: rendered.headings, dirty: false };
+                  const assetVersion = createAssetVersion();
+                  const rendered = renderMarkdown(doc.savedContent, doc.path, assetVersion);
+                  return { ...doc, content: doc.savedContent, assetVersion, html: rendered.html, headings: rendered.headings, dirty: false };
                 })}
                 onToggleEdit={() => paneDoc && toggleDocumentEdit(paneDoc.id)}
                 onReveal={() => paneDoc && api.revealFile(paneDoc.path)}
@@ -850,6 +876,41 @@ function Pane({
   onPreviewClick
 }) {
   const paneRef = useRef(null);
+
+  useEffect(() => {
+    if (!doc || doc.isEditing) return undefined;
+
+    // Re-read local images through IPC so Refresh bypasses Chromium's file:// cache.
+    let cancelled = false;
+    const objectUrls = [];
+    const timer = window.setTimeout(() => {
+      const images = Array.from(paneRef.current?.querySelectorAll('.markdown-preview img[data-mdviewer-local-image]') ?? []);
+
+      images.forEach((image) => {
+        const localPath = image.getAttribute('data-mdviewer-local-image');
+        const assetVersion = image.getAttribute('data-mdviewer-asset-version');
+        if (!localPath) return;
+
+        api.readAsset(localPath)
+          .then((asset) => {
+            if (cancelled || image.getAttribute('data-mdviewer-asset-version') !== assetVersion) return;
+            const blob = new Blob([asset.bytes], { type: asset.contentType });
+            const objectUrl = URL.createObjectURL(blob);
+            objectUrls.push(objectUrl);
+            image.src = objectUrl;
+          })
+          .catch((error) => {
+            console.error('Local image refresh failed', localPath, error);
+          });
+      });
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      objectUrls.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
+    };
+  }, [doc, doc?.assetVersion, doc?.html, doc?.isEditing]);
 
   useEffect(() => {
     if (!doc || doc.isEditing) return undefined;
@@ -974,7 +1035,7 @@ function Pane({
               />
             ) : (
               <article
-                key={`${doc.id}:${theme}:${doc.html.length}`}
+                key={`${doc.id}:${theme}:${doc.assetVersion}`}
                 className="markdown-preview"
                 onClick={(event) => onPreviewClick(event, doc)}
                 dangerouslySetInnerHTML={{ __html: doc.html }}
