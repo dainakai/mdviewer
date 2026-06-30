@@ -116,6 +116,11 @@ button {
   gap: 6px;
 }
 
+.help-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .icon-button,
 .new-tab-button,
 .search-box button,
@@ -368,6 +373,62 @@ button:disabled {
   flex: 0 0 auto;
 }
 
+.tab-context-menu {
+  position: fixed;
+  z-index: 20;
+  display: grid;
+  min-width: 190px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 4px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(20, 24, 20, 0.18);
+}
+
+.tab-context-menu button {
+  display: block;
+  width: 100%;
+  border-radius: 5px;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tab-context-menu button:hover {
+  background: var(--surface-2);
+}
+
+.help-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 210px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 4px;
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(20, 24, 20, 0.18);
+}
+
+.help-menu button {
+  display: block;
+  width: 100%;
+  border-radius: 5px;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.help-menu button:hover {
+  background: var(--surface-2);
+}
+
 .pane-buttons {
   display: inline-flex;
   align-items: center;
@@ -618,6 +679,79 @@ button:disabled {
   border-color: #83b7a4;
   background: var(--accent);
   color: #fff;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm;
+  }
+
+  :root,
+  :root[data-theme="dark"] {
+    --surface: #ffffff;
+    --surface-2: #f0f2f4;
+    --pre-bg: #f6f8fa;
+    --quote-bg: #f6f8fa;
+    --quote-text: #333333;
+    --line: #d0d7de;
+    --text: #111111;
+    --muted: #555555;
+    --link: #0645ad;
+  }
+
+  body {
+    overflow: visible;
+    background: #ffffff;
+    color: #111111;
+  }
+
+  .app-shell,
+  .main-layout,
+  .workspace,
+  .pane,
+  .document-body {
+    display: block;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .topbar,
+  .sidebar,
+  .statusbar,
+  .tabbar,
+  .document-toolbar,
+  .error-banner,
+  .pane:not(.is-active),
+  .empty-state {
+    display: none !important;
+  }
+
+  .pane.is-active {
+    border: 0;
+    outline: 0;
+    background: #ffffff;
+  }
+
+  .markdown-preview {
+    contain: none;
+    width: 100%;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    color: #111111;
+    font-size: 16px;
+  }
+
+  .markdown-preview img,
+  .markdown-preview pre.hljs,
+  .mermaid-block {
+    content-visibility: visible;
+  }
 }
 
 .statusbar {
