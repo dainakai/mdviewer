@@ -67,9 +67,9 @@ jobs:
           - os: ubuntu-latest
             script: dist:linux
             artifact: linux
-          - os: macos-latest
-            script: dist:mac
-            artifact: macos
+          - os: windows-latest
+            script: dist:win
+            artifact: windows
 
     steps:
       - uses: actions/checkout@v4
@@ -85,8 +85,7 @@ jobs:
           path: |
             release/*.AppImage
             release/*.deb
-            release/*.dmg
-            release/*.zip
+            release/*.exe
             release/latest*.yml
             release/*.blockmap
           if-no-files-found: error
@@ -123,8 +122,7 @@ jobs:
           files: |
             artifacts/**/*.AppImage
             artifacts/**/*.deb
-            artifacts/**/*.dmg
-            artifacts/**/*.zip
+            artifacts/**/*.exe
             artifacts/**/latest*.yml
             artifacts/**/*.blockmap
           draft: false

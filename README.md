@@ -1,10 +1,10 @@
 # Markdown Viewer
 
-Markdown Viewer is a desktop Markdown viewer for Linux and macOS. It focuses on reading Markdown files quickly, while still offering light editing when needed.
+Markdown Viewer is a desktop Markdown viewer for Linux and Windows, with macOS available from source. It focuses on reading Markdown files quickly, while still offering light editing when needed.
 
 ## Screenshot
 
-![Markdown Viewer showing a Markdown document with tabs, outline navigation, LaTeX math, and a Mermaid diagram](docs/screenshot.png)
+![Markdown Viewer showing split panes, tabs, outline navigation, rendered math, and the Help update menu](docs/screenshot.png)
 
 ## Features
 
@@ -50,21 +50,29 @@ chmod +x Markdown-Viewer-<version>-linux-x86_64.AppImage
 
 Some desktops also let you run it by double-clicking after you mark it executable. Use the `.deb` package if you want normal desktop installation and file association metadata.
 
+### Windows
+
+Download `Markdown-Viewer-<version>-win-x64.exe` from GitHub Releases and run the installer. The installer sets up Markdown Viewer and registers Markdown file associations; Windows may still require you to choose Markdown Viewer once from **Open with**.
+
+Note: Windows installers are currently unsigned, so Windows SmartScreen may ask you to confirm before running the installer.
+
 ### macOS
 
-Download the `.dmg`, open it, and drag **Markdown Viewer** into **Applications**. Launch it from Applications or by using **Open With** on a Markdown file.
+macOS binary packages are not published at this time because signed and notarized packages are required for reliable distribution and updates. Use the source archive from GitHub Releases or clone the repository and run it locally:
 
-The macOS package declares Markdown file support, but it does not necessarily become the default handler automatically. To make it the default, select a `.md` file in Finder, choose **Get Info**, set **Open with** to Markdown Viewer, then choose **Change All**.
-
-Note: macOS builds are currently unsigned. You may need to allow the app manually in macOS security settings until signed and notarized packages are available.
+```bash
+npm install
+npm run build
+npm start
+```
 
 ## Updates
 
-Installed packaged builds check GitHub Releases on startup. When a newer version is available, Markdown Viewer asks once before downloading it, installing it, and restarting. You can skip a specific version from the startup prompt so it is not shown again automatically.
+Installed Linux and Windows builds check GitHub Releases on startup. When a newer version is available, Markdown Viewer asks once before downloading it, installing it, and restarting. You can skip a specific version from the startup prompt so it is not shown again automatically.
 
 You can also use **Help > Check for Updates...** to check manually from the native menu or the in-app Help button. Manual update checks ask once before downloading, installing, and restarting. Update checks are disabled in local development runs.
 
-Note: reliable macOS auto-update requires signed packages. Current unsigned macOS builds may still require manual replacement from GitHub Releases.
+macOS source runs do not use the in-app updater.
 
 ## Development
 
