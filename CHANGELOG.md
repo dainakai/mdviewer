@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.1.7 - 2026-06-30
+
+### Added
+
+- Added drag-and-drop tab movement between split panes.
+- Added tab context menu actions for **Split Left**, **Split Right**, moving to the other pane, and closing the tab.
+- Added an in-app **Help** menu with **Check for Updates...** for environments where the native menu is hidden.
+- Added update prompt support for skipping a specific available version during startup checks.
+
+### Changed
+
+- Manual and startup update installs now use a single confirmation before downloading, installing, and restarting.
+- PDF export now defaults to the active Markdown document name, ensures a `.pdf` extension, and exports the active document content instead of the app chrome.
+
 ## v0.1.6 - 2026-06-30
 
 ### Fixed
