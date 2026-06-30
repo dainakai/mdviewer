@@ -1,6 +1,6 @@
 {
   "name": "mdviewer",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": false,
   "description": "Desktop Markdown viewer with tabs, split panes, LaTeX math, Mermaid diagrams, and light editing.",
   "desktopName": "mdviewer",

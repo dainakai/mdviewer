@@ -6,6 +6,18 @@ const path = require('node:path');
 const os = require('node:os');
 
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mdown', '.mkd', '.mkdn']);
+const IMAGE_CONTENT_TYPES = new Map([
+  ['.apng', 'image/apng'],
+  ['.avif', 'image/avif'],
+  ['.bmp', 'image/bmp'],
+  ['.gif', 'image/gif'],
+  ['.ico', 'image/x-icon'],
+  ['.jpeg', 'image/jpeg'],
+  ['.jpg', 'image/jpeg'],
+  ['.png', 'image/png'],
+  ['.svg', 'image/svg+xml'],
+  ['.webp', 'image/webp']
+]);
 const STARTUP_UPDATE_CHECK_DELAY_MS = 3500;
 const isDev = Boolean(process.env.ELECTRON_RENDERER_URL);
 
@@ -254,6 +266,10 @@ function scheduleStartupUpdateCheck() {
   }, STARTUP_UPDATE_CHECK_DELAY_MS);
 }
 
+function imageContentType(filePath) {
+  return IMAGE_CONTENT_TYPES.get(path.extname(filePath).toLowerCase()) ?? 'application/octet-stream';
+}
+
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1320,
@@ -437,6 +453,16 @@ ipcMain.handle('file:read', async (_event, filePath) => {
     directory: path.dirname(absolutePath),
     content,
     mtimeMs: stat.mtimeMs
+  };
+});
+
+ipcMain.handle('file:readAsset', async (_event, filePath) => {
+  const absolutePath = path.resolve(filePath);
+  const data = await fs.readFile(absolutePath);
+  return {
+    path: absolutePath,
+    contentType: imageContentType(absolutePath),
+    bytes: new Uint8Array(data)
   };
 });
 

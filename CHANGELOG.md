@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.6 - 2026-06-30
+
+### Fixed
+
+- Refresh now reloads changed local images embedded in the open Markdown document, even when the Markdown text itself did not change.
+
 ## v0.1.5 - 2026-06-26
 
 ### Changed
